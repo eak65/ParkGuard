@@ -1,5 +1,6 @@
 import cv2
 import mediapipe as mp
+import requests
 
 mpPose = mp.solutions.pose
 pose = mpPose.Pose()
@@ -29,8 +30,13 @@ while True:
         lx, ly = int(lw.x * w), int(lw.y * h)
         rx, ry = int(rw.x * w), int(rw.y * h)
         if abs(lx) < lsx and abs(lx) > rsx and abs(rx) < lsx and abs(rx) > rsx and abs(ly - ry) < min[1] :
-            print(lw)
-            print(rw)
+
+            url = 'https://www.w3schools.com/python/demopage.php'
+            myobj = {'username': 'test1'}
+            x = requests.post(url, data=myobj)
+            if x.status_code == 200:
+                print("Parking Spot Purchased!")
+
         for id, lm in enumerate(results.pose_landmarks.landmark):
             cx, cy = int(lm.x * w), int(lm.y * h)
             cv2.circle(frame, (cx,cy), 5,(255,0,0),cv2.FILLED)
