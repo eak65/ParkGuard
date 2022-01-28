@@ -7,6 +7,7 @@ mpPose = mp.solutions.pose
 pose = mpPose.Pose()
 mpDraw = mp.solutions.drawing_utils
 vid = cv2.VideoCapture(0)
+found = 0
 while True:
     # Capture the video frame
     # by frame
@@ -32,32 +33,35 @@ while True:
         rsx, rsy = int(rs.x * w), int(rs.y * h)
         lx, ly = int(lw.x * w), int(lw.y * h)
         rx, ry = int(rw.x * w), int(rw.y * h)
-        if abs(lx) < lsx and abs(lx) > rsx and abs(rx) < lsx and abs(rx) > rsx and abs(ly - ry) < min[1] :
+        if abs(lx) < lsx and abs(lx) > rsx and abs(rx) < lsx and abs(rx) > rsx and abs(ly - ry) < min[1]:
+            found += 1
+            if found > 30:
+                headers = {'Content-type': 'text/plain'}
 
-            headers = {'Content-type': 'text/plain'}
-
-            url = "https://m8qo5eeqz6.execute-api.us-east-1.amazonaws.com/payParking"
-            image_file = 'frame.jpg'
-            cv2.imwrite("frame.jpg", frame)
-            with open(image_file, "rb") as f:
-                im_bytes = f.read()
-            im_b64 = base64.b64encode(im_bytes).decode("utf8")
+                url = "https://m8qo5eeqz6.execute-api.us-east-1.amazonaws.com/payParking"
+                image_file = 'frame.jpg'
+                cv2.imwrite("frame.jpg", frame)
+                with open(image_file, "rb") as f:
+                    im_bytes = f.read()
+                im_b64 = base64.b64encode(im_bytes).decode("utf8")
             # img = cv2.imread('frame.jpg')
-            imageEncoding = im_b64
+                imageEncoding = im_b64
             # print(imageEncoding)
-            payload = "{\r\n    \"username\": \"test\",\r\n    \"imageName\": \"test.jpeg\",\r\n    \"imageData\": \""+imageEncoding+"\"\r\n}"
-            headers = {
+                payload = "{\r\n    \"username\": \"test\",\r\n    \"imageName\": \"test.jpeg\",\r\n    \"imageData\": \""+imageEncoding+"\"\r\n}"
+                headers = {
                 'Content-Type': 'text/plain'
-            }
+                }
 
-            x = requests.request("POST", url, headers=headers, data=payload)
-            if x.status_code == 200:
-                print("Parking Spot Purchased!")
-                break
-            else:
-                print(x.reason)
-                print("failed")
-                break
+                x = requests.request("POST", url, headers=headers, data=payload)
+                if x.status_code == 200:
+                    print("Parking Spot Purchased!")
+                    break
+                else:
+                    print(x.reason)
+                    print("failed")
+                    break
+        else:
+            found = 0
 
         for id, lm in enumerate(results.pose_landmarks.landmark):
             cx, cy = int(lm.x * w), int(lm.y * h)
