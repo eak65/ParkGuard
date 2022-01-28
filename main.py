@@ -1,6 +1,7 @@
 import cv2
 import mediapipe as mp
 import requests
+import base64
 
 mpPose = mp.solutions.pose
 pose = mpPose.Pose()
@@ -13,6 +14,8 @@ while True:
 
     # Display the resulting frame
     imgRGB = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+
+
     # the 'q' button is set as the
     # quitting button you may use any
     # desired button of your choice
@@ -31,11 +34,30 @@ while True:
         rx, ry = int(rw.x * w), int(rw.y * h)
         if abs(lx) < lsx and abs(lx) > rsx and abs(rx) < lsx and abs(rx) > rsx and abs(ly - ry) < min[1] :
 
-            url = 'https://www.w3schools.com/python/demopage.php'
-            myobj = {'username': 'test1'}
-            x = requests.post(url, data=myobj)
+            headers = {'Content-type': 'text/plain'}
+
+            url = "https://m8qo5eeqz6.execute-api.us-east-1.amazonaws.com/payParking"
+            image_file = 'frame.jpg'
+            cv2.imwrite("frame.jpg", frame)
+            with open(image_file, "rb") as f:
+                im_bytes = f.read()
+            im_b64 = base64.b64encode(im_bytes).decode("utf8")
+            # img = cv2.imread('frame.jpg')
+            imageEncoding = im_b64
+            # print(imageEncoding)
+            payload = "{\r\n    \"username\": \"test\",\r\n    \"imageName\": \"test.jpeg\",\r\n    \"imageData\": \""+imageEncoding+"\"\r\n}"
+            headers = {
+                'Content-Type': 'text/plain'
+            }
+
+            x = requests.request("POST", url, headers=headers, data=payload)
             if x.status_code == 200:
                 print("Parking Spot Purchased!")
+                break
+            else:
+                print(x.reason)
+                print("failed")
+                break
 
         for id, lm in enumerate(results.pose_landmarks.landmark):
             cx, cy = int(lm.x * w), int(lm.y * h)
@@ -52,6 +74,11 @@ while True:
 vid.release()
 # Destroy all the windows
 cv2.destroyAllWindows()
+
+def get_base64_encoded_image(image_path):
+    with open(image_path, "rb") as img_file:
+        return base64.b64encode(img_file.read()).decode('utf-8')
+
 #while True:
 #    success, img = cap.read()
 #    imgRGB = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
