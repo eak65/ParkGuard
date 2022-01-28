@@ -29,13 +29,25 @@ class CopDataset(Dataset):
         self.resize_height = resize_height
         self.resize_width = resize_width
         self.toTensor = transforms.ToTensor()
+        self.transform =  transforms.Compose([
+        transforms.ToTensor(),
+        transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+    ])
+        self.transform = transforms.Compose([
+        # transforms.RandomCrop(256, padding=4),
+        transforms.ToTensor(),
+        transforms.RandomHorizontalFlip(),
+        transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+    ])
  
     def __getitem__(self, i):
         index = i % self.len
         image_name, label = self.image_label_list[index]
         image_path = os.path.join(self.image_dir, image_name)
         img = self.load_data(image_path, self.resize_height, self.resize_width, normalization=False)
-        img = self.data_preproccess(img)
+        # img = self.data_preproccess(img)
+        img = self.transform(img)
+
         label=np.array(label)
         return img, label
  
@@ -127,12 +139,13 @@ def test(epoch):
             os.mkdir('checkpoint')
         best_acc = acc
 
-        torch.save({
-                    'epoch': epoch,
-                    'model_state_dict': net.state_dict(),
-                    'optimizer_state_dict': optimizer.state_dict(),
-                    'loss': loss,
-                    }, f'./checkpoint/epoch_{epoch + 1}_ckpt.pt')
+        # torch.save({
+        #             'epoch': epoch,
+        #             'model_state_dict': net.state_dict(),
+        #             'optimizer_state_dict': optimizer.state_dict(),
+        #             'loss': loss,
+        #             }, f'./checkpoint/epoch_{epoch + 1}_ckpt.pt')
+        torch.save(net.state_dict(), f'./checkpoint_updated/epoch_{epoch + 1}_ckpt.pt')
 
 
 
@@ -150,7 +163,7 @@ if __name__ == "__main__":
     # Data
     print('==> Preparing data..')
     transform_train = transforms.Compose([
-        transforms.RandomCrop(32, padding=4),
+        # transforms.RandomCrop(256, padding=4),
         transforms.RandomHorizontalFlip(),
         transforms.ToTensor(),
         transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
@@ -171,9 +184,8 @@ if __name__ == "__main__":
     print('==> Building model..')
     net = models.resnet18(pretrained=True)
     num_ftrs = net.fc.in_features
-    net.fc = nn.Sequential(
-        nn.Linear(num_ftrs, 10)
-    )
+    net.fc = nn.Linear(num_ftrs, 10)
+
 
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     net = net.to(device)
